@@ -1,0 +1,35 @@
+[sqlfluff]
+dialect = clickhouse
+templater = dbt
+# Шаблоны dbt длинные, поэтому строка шире стандартных 80.
+max_line_length = 120
+# LT05 — длинные строки конфликтуют с переносами в шаблонах dbt.
+# CP03 и CP05 — регистр имён: ClickHouse различает регистр в именах
+# функций (sumIf работает, sumif нет), а sqlfluff требует нижний
+# регистр. Правила отключены, чтобы линтер не ломал рабочий SQL.
+# RF04 — колонки state и gender это имена из источника, менять нельзя.
+# AL03 — диалект не разбирает агрегаты с параметром вида
+# quantile(0.95)(amount); в этой строке стоит точечный noqa.
+exclude_rules = LT05, CP03, CP05, RF04, AL03
+# Линтуем только свой код: у пакетов свои настройки и свои правила.
+ignore = dbt_packages/**, target/**, logs/**
+
+[sqlfluff:templater:dbt]
+project_dir = ./
+profiles_dir = ./
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.identifiers]
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:layout.indent]
+indent_unit = space
+tab_space_size = 4
+
+[sqlfluff:rules:layout.commas]
+line_position = trailing
+
+[sqlfluff:rules:references.special_chars]
+unquoted_identifiers_policy = all

@@ -1,0 +1,18 @@
+# Файлы преподавателя не трогаем: hooks переписывают переводы строк.
+exclude: ^(TASK\.md|AGENTS\.md)$
+
+# Только hooks над файлами. sqlfluff запускается отдельно через
+# `make lint`: ему нужен настоящий dbt-проект, а не изолированное
+# окружение pre-commit.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: mixed-line-ending
+        args: [--fix=lf]
