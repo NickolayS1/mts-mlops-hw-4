@@ -1,0 +1,24 @@
+unit_tests:
+  - name: stg_transactions_buckets_amount_and_flags_fraud
+    description: >
+      Проверка макроса amount_bucket и разбора признака фрода.
+      Границы сегментов заданы в макросе, поэтому тест фиксирует
+      и нижнюю, и верхнюю границу каждого сегмента.
+    model: stg_transactions
+    given:
+      - input: source('raw', 'transactions')
+        rows:
+          - {transaction_time: '2020-01-01 10:00:00', merch: 'Shop A', cat_id: 'grocery_pos', amount: 5.00, name_1: 'Ann', name_2: 'Lee', gender: 'F', street: '1 Main St', one_city: 'Boston', us_state: 'MA', post_code: '02101', lat: 42.36, lon: -71.06, population_city: 700000, jobs: 'Teacher', merchant_lat: 42.35, merchant_lon: -71.05, target: 0}
+          - {transaction_time: '2020-01-01 11:00:00', merch: 'Shop B', cat_id: 'grocery_pos', amount: 10.00, name_1: 'Bob', name_2: 'Kim', gender: 'M', street: '2 Oak Ave', one_city: 'Boston', us_state: 'MA', post_code: '02102', lat: 42.37, lon: -71.07, population_city: 700000, jobs: 'Driver', merchant_lat: 42.38, merchant_lon: -71.08, target: 1}
+          - {transaction_time: '2020-01-01 12:00:00', merch: 'Shop C', cat_id: 'travel', amount: 50.00, name_1: 'Cid', name_2: 'Ray', gender: 'F', street: '3 Elm St', one_city: 'Boston', us_state: 'MA', post_code: '02103', lat: 42.39, lon: -71.09, population_city: 700000, jobs: 'Nurse', merchant_lat: 42.40, merchant_lon: -71.10, target: 0}
+          - {transaction_time: '2020-01-01 13:00:00', merch: 'Shop D', cat_id: 'travel', amount: 200.00, name_1: 'Dan', name_2: 'Fox', gender: 'M', street: '4 Pine Rd', one_city: 'Boston', us_state: 'MA', post_code: '02104', lat: 42.41, lon: -71.11, population_city: 700000, jobs: 'Chef', merchant_lat: 42.42, merchant_lon: -71.12, target: 1}
+          - {transaction_time: '2020-01-01 14:00:00', merch: 'Shop E', cat_id: 'shopping_net', amount: 1000.00, name_1: 'Eve', name_2: 'Ward', gender: 'F', street: '5 Cedar Ln', one_city: 'Boston', us_state: 'MA', post_code: '02105', lat: 42.43, lon: -71.13, population_city: 700000, jobs: 'Engineer', merchant_lat: 42.44, merchant_lon: -71.14, target: 0}
+          - {transaction_time: '2020-01-01 15:00:00', merch: 'Shop F', cat_id: 'shopping_net', amount: 5000.00, name_1: 'Fay', name_2: 'Cole', gender: 'M', street: '6 Birch Way', one_city: 'Boston', us_state: 'MA', post_code: '02106', lat: 42.45, lon: -71.15, population_city: 700000, jobs: 'Artist', merchant_lat: 42.46, merchant_lon: -71.16, target: 1}
+    expect:
+      rows:
+        - {amount: 5.00, amount_bucket: 'micro', is_fraud: 0}
+        - {amount: 10.00, amount_bucket: 'small', is_fraud: 1}
+        - {amount: 50.00, amount_bucket: 'medium', is_fraud: 0}
+        - {amount: 200.00, amount_bucket: 'large', is_fraud: 1}
+        - {amount: 1000.00, amount_bucket: 'extra_large', is_fraud: 0}
+        - {amount: 5000.00, amount_bucket: 'extra_large', is_fraud: 1}

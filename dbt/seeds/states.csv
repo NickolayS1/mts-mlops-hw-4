@@ -1,0 +1,52 @@
+state_code,state_name,region,timezone
+AL,Alabama,South,Central
+AK,Alaska,West,Alaska
+AZ,Arizona,West,Mountain
+AR,Arkansas,South,Central
+CA,California,West,Pacific
+CO,Colorado,West,Mountain
+CT,Connecticut,Northeast,Eastern
+DE,Delaware,South,Eastern
+DC,District of Columbia,South,Eastern
+FL,Florida,South,Eastern
+GA,Georgia,South,Eastern
+HI,Hawaii,West,Hawaii
+ID,Idaho,West,Mountain
+IL,Illinois,Midwest,Central
+IN,Indiana,Midwest,Eastern
+IA,Iowa,Midwest,Central
+KS,Kansas,Midwest,Central
+KY,Kentucky,South,Eastern
+LA,Louisiana,South,Central
+ME,Maine,Northeast,Eastern
+MD,Maryland,South,Eastern
+MA,Massachusetts,Northeast,Eastern
+MI,Michigan,Midwest,Eastern
+MN,Minnesota,Midwest,Central
+MS,Mississippi,South,Central
+MO,Missouri,Midwest,Central
+MT,Montana,West,Mountain
+NE,Nebraska,Midwest,Central
+NV,Nevada,West,Pacific
+NH,New Hampshire,Northeast,Eastern
+NJ,New Jersey,Northeast,Eastern
+NM,New Mexico,West,Mountain
+NY,New York,Northeast,Eastern
+NC,North Carolina,South,Eastern
+ND,North Dakota,Midwest,Central
+OH,Ohio,Midwest,Eastern
+OK,Oklahoma,South,Central
+OR,Oregon,West,Pacific
+PA,Pennsylvania,Northeast,Eastern
+RI,Rhode Island,Northeast,Eastern
+SC,South Carolina,South,Eastern
+SD,South Dakota,Midwest,Central
+TN,Tennessee,South,Central
+TX,Texas,South,Central
+UT,Utah,West,Mountain
+VT,Vermont,Northeast,Eastern
+VA,Virginia,South,Eastern
+WA,Washington,West,Pacific
+WV,West Virginia,South,Eastern
+WI,Wisconsin,Midwest,Central
+WY,Wyoming,West,Mountain

@@ -1,0 +1,92 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Сырые транзакции, пришедшие из топика Kafka в ClickHouse через
+      Kafka-движок и Materialized View. Данные не преобразуются:
+      типы и очистка начинаются в слое staging.
+    database: transactions_db
+    schema: transactions_db
+    tables:
+      - name: transactions
+        description: >
+          Одна строка — одна транзакция. 786 431 строка за период
+          с 2019-01-01 по 2020-12-31. Признак фрода лежит в колонке target.
+        columns:
+          - name: transaction_time
+            description: Время совершения транзакции.
+            data_tests:
+              - not_null
+          - name: merch
+            description: Название мерчанта, через которого прошла транзакция.
+            data_tests:
+              - not_null
+          - name: cat_id
+            description: Категория транзакции, 14 значений.
+            data_tests:
+              - not_null
+              - accepted_values:
+                  values:
+                    - 'health_fitness'
+                    - 'food_dining'
+                    - 'home'
+                    - 'shopping_net'
+                    - 'shopping_pos'
+                    - 'kids_pets'
+                    - 'misc_net'
+                    - 'entertainment'
+                    - 'gas_transport'
+                    - 'grocery_net'
+                    - 'grocery_pos'
+                    - 'misc_pos'
+                    - 'travel'
+                    - 'personal_care'
+          - name: amount
+            description: Сумма транзакции в долларах США.
+            data_tests:
+              - not_null
+              - dbt_expectations.expect_column_values_to_be_between:
+                  min_value: 0
+          - name: name_1
+            description: Имя клиента.
+            data_tests:
+              - not_null
+          - name: name_2
+            description: Фамилия клиента.
+            data_tests:
+              - not_null
+          - name: gender
+            description: Пол клиента.
+            data_tests:
+              - not_null
+              - accepted_values:
+                  values: ['M', 'F']
+          - name: street
+            description: Улица и дом из адреса клиента.
+          - name: one_city
+            description: Город клиента.
+          - name: us_state
+            description: Штат США, 51 значение включая округ Колумбия.
+            data_tests:
+              - not_null
+          - name: post_code
+            description: Почтовый индекс клиента.
+          - name: lat
+            description: Широта клиента.
+          - name: lon
+            description: Долгота клиента.
+          - name: population_city
+            description: Население города клиента.
+          - name: jobs
+            description: Профессия клиента.
+          - name: merchant_lat
+            description: Широта мерчанта.
+          - name: merchant_lon
+            description: Долгота мерчанта.
+          - name: target
+            description: Признак фрода. 1 — мошенническая транзакция, 0 — обычная.
+            data_tests:
+              - not_null
+              - accepted_values:
+                  values: [0, 1]
