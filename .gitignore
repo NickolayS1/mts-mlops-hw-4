@@ -1,0 +1,22 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+dbt/.user.yml
+# package-lock.yml не игнорируется: он фиксирует версии пакетов dbt
+
+# Датасет соревнования в репозиторий не входит
+teta-ml-1-2025/
+
+# Node — нужен только для локальных инструментов, в проект не входит
+node_modules/
+package-lock.json
+
+# IDE
+.idea/
+.vscode/
