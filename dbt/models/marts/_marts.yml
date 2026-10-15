@@ -1,0 +1,437 @@
+version: 2
+
+models:
+  - name: mart_daily_state_metrics
+    description: >
+      Дневные метрики транзакций в разрезе даты и штата. Одна строка —
+      один день одного штата. Витрина отвечает на вопрос, как менялся
+      поток платежей и уровень фрода по регионам день ото дня.
+    columns:
+      - name: daily_state_key
+        description: Суррогатный ключ строки, собранный из даты и штата.
+        data_tests:
+          - unique
+          - not_null
+      - name: transaction_date
+        description: Дата, за которую посчитаны метрики.
+        data_tests:
+          - not_null
+      - name: weekday_number
+        description: Номер дня недели, 1 — понедельник, 7 — воскресенье.
+      - name: state
+        description: Код штата США.
+        data_tests:
+          - not_null
+      - name: transactions_count
+        description: Количество транзакций за день в штате.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1
+      - name: unique_customers
+        description: Число уникальных клиентов за день.
+      - name: unique_merchants
+        description: Число уникальных мерчантов за день.
+      - name: total_amount
+        description: Суммарный оборот за день.
+        data_tests:
+          - not_null
+      - name: avg_amount
+        description: Средний чек за день.
+        data_tests:
+          - not_null
+      - name: median_amount
+        description: Медианный чек за день.
+      - name: p95_amount
+        description: 95-й процентиль суммы — граница крупных покупок.
+      - name: amount_stddev
+        description: Стандартное отклонение сумм внутри дня.
+      - name: large_transactions_count
+        description: Число транзакций дороже 500 долларов.
+      - name: large_transactions_rate
+        description: Доля крупных транзакций в процентах.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100
+      - name: fraud_count
+        description: Число мошеннических транзакций за день.
+      - name: fraud_rate
+        description: Доля фрода за день в процентах.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100
+    data_tests:
+      # Ключ витрины — сочетание даты и штата, оно не должно повторяться.
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - transaction_date
+            - state
+
+  - name: mart_fraud_by_category
+    description: >
+      Анализ фрода по категориям транзакций. Одна строка — одна категория.
+      Витрина показывает, в каких категориях мошенничество встречается
+      чаще и где сосредоточены мошеннические суммы.
+    columns:
+      - name: category
+        description: Категория транзакции, 14 значений.
+        data_tests:
+          - unique
+          - not_null
+      - name: transactions_count
+        description: Общее число транзакций в категории.
+        data_tests:
+          - not_null
+      - name: unique_customers
+        description: Число уникальных клиентов в категории.
+      - name: unique_merchants
+        description: Число уникальных мерчантов в категории.
+      - name: fraud_count
+        description: Число мошеннических транзакций.
+        data_tests:
+          - not_null
+      - name: fraud_rate
+        description: Доля фрода в категории в процентах.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100
+      - name: fraud_rate_index
+        description: Во сколько раз уровень фрода в категории выше среднего по всем категориям.
+      - name: is_high_risk_category
+        description: Флаг категории с уровнем фрода выше 5 процентов.
+        data_tests:
+          - not_null
+      - name: total_amount
+        description: Суммарный оборот категории.
+      - name: fraud_amount
+        description: Сумма мошеннических транзакций.
+      - name: avg_amount
+        description: Средний чек в категории.
+      - name: avg_fraud_amount
+        description: Средний чек мошеннической транзакции.
+      - name: amount_share
+        description: Доля категории в общем обороте в процентах.
+
+  - name: mart_fraud_by_state
+    description: >
+      Географический анализ фрода по штатам США. Одна строка — один штат.
+      Витрина отвечает на вопрос, в каких штатах риск мошенничества
+      выше среднего по стране.
+    columns:
+      - name: state
+        description: Код штата США.
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('states')
+              field: state_code
+      - name: transactions_count
+        description: Общее число транзакций в штате.
+        data_tests:
+          - not_null
+      - name: unique_customers
+        description: Число уникальных клиентов штата.
+        data_tests:
+          - not_null
+      - name: unique_merchants
+        description: Число уникальных мерчантов штата.
+      - name: unique_cities
+        description: Число уникальных городов штата.
+      - name: fraud_count
+        description: Число мошеннических транзакций.
+        data_tests:
+          - not_null
+      - name: fraud_rate
+        description: Доля фрода в штате в процентах.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100
+      - name: national_fraud_rate
+        description: Средняя доля фрода по всем штатам, база для сравнения.
+      - name: fraud_rate_index
+        description: Отношение уровня фрода штата к среднему по стране.
+      - name: above_national_average
+        description: Флаг штата с уровнем фрода выше среднего по стране.
+        data_tests:
+          - not_null
+      - name: fraud_customers
+        description: Число клиентов, у которых есть хотя бы одна мошенническая транзакция.
+      - name: fraud_customers_share
+        description: Доля таких клиентов от всех клиентов штата в процентах.
+      - name: total_amount
+        description: Суммарный оборот штата.
+      - name: fraud_amount
+        description: Сумма мошеннических транзакций.
+      - name: avg_amount
+        description: Средний чек в штате.
+      - name: avg_fraud_amount
+        description: Средний чек мошеннической транзакции.
+      - name: avg_distance_km
+        description: Среднее расстояние между клиентом и мерчантом.
+      - name: max_distance_km
+        description: Максимальное расстояние между клиентом и мерчантом.
+      - name: avg_lat
+        description: Средняя широта клиентов штата.
+      - name: avg_lon
+        description: Средняя долгота клиентов штата.
+
+  - name: mart_customer_risk_profile
+    description: >
+      Профиль риска клиентов. Одна строка — один клиент. Риск собирается
+      из четырёх признаков: наличие фрода, высокая частота фрода, ночная
+      активность и средний чек выше среднего. Витрина используется для
+      приоритизации ручных проверок.
+    columns:
+      - name: customer_id
+        description: Суррогатный ключ клиента.
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_name
+        description: Имя и фамилия клиента.
+        data_tests:
+          - not_null
+      - name: city
+        description: Город клиента.
+      - name: state
+        description: Код штата США.
+        data_tests:
+          - not_null
+      - name: gender
+        description: Пол клиента.
+      - name: jobs
+        description: Профессия клиента.
+      - name: transactions_count
+        description: Общее число транзакций клиента.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1
+      - name: unique_merchants
+        description: Число уникальных мерчантов клиента.
+      - name: unique_categories
+        description: Число уникальных категорий клиента.
+      - name: first_transaction_date
+        description: Дата первой транзакции клиента.
+        data_tests:
+          - not_null
+      - name: last_transaction_date
+        description: Дата последней транзакции клиента.
+        data_tests:
+          - not_null
+      - name: active_days
+        description: Число дней между первой и последней транзакцией включительно.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1
+      - name: total_amount
+        description: Суммарный оборот клиента.
+        data_tests:
+          - not_null
+      - name: avg_amount
+        description: Средний чек клиента.
+        data_tests:
+          - not_null
+      - name: median_amount
+        description: Медианный чек клиента.
+      - name: max_amount
+        description: Максимальная сумма транзакции клиента.
+      - name: amount_vs_average
+        description: Отношение среднего чека клиента к среднему по всем клиентам.
+      - name: fraud_count
+        description: Число мошеннических транзакций клиента.
+        data_tests:
+          - not_null
+      - name: fraud_rate
+        description: Доля фрода у клиента в процентах.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100
+      - name: fraud_amount
+        description: Сумма мошеннических транзакций клиента.
+      - name: night_transactions_count
+        description: Число транзакций клиента в период с 0 до 5 часов.
+      - name: night_transactions_share
+        description: Доля ночных транзакций в процентах.
+      - name: avg_distance_km
+        description: Среднее расстояние между клиентом и мерчантом.
+      - name: risk_score
+        description: Число сработавших признаков риска, от 0 до 4.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 4
+      - name: risk_level
+        description: Уровень риска клиента, HIGH при трёх и более признаках.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['HIGH', 'MEDIUM', 'LOW']
+    data_tests:
+      # Клиент опознаётся по имени и городу, ключ не должен дублироваться.
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - customer_name
+            - city
+
+  - name: mart_hourly_fraud_pattern
+    description: >
+      Временные паттерны фрода. Одна строка — сочетание дня недели и часа.
+      Всего 168 окон. Витрина показывает, в какие часы и дни риск
+      мошенничества повышен относительно среднего уровня.
+    columns:
+      - name: hour_slot_key
+        description: Суррогатный ключ окна, собранный из дня недели и часа.
+        data_tests:
+          - unique
+          - not_null
+      - name: day_of_week
+        description: Номер дня недели, 1 — понедельник, 7 — воскресенье.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4, 5, 6, 7]
+      - name: day_name
+        description: Название дня недели на английском.
+        data_tests:
+          - not_null
+      - name: transaction_hour
+        description: Час суток от 0 до 23.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+      - name: is_weekend
+        description: Флаг субботы и воскресенья.
+        data_tests:
+          - not_null
+      - name: transactions_count
+        description: Число транзакций в этом окне за весь период.
+        data_tests:
+          - not_null
+      - name: unique_customers
+        description: Число уникальных клиентов в окне.
+      - name: fraud_count
+        description: Число мошеннических транзакций в окне.
+        data_tests:
+          - not_null
+      - name: fraud_rate
+        description: Доля фрода в окне в процентах.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100
+      - name: overall_fraud_rate
+        description: Средняя доля фрода по всем окнам, база для сравнения.
+      - name: fraud_rate_index
+        description: Во сколько раз окно рискованнее среднего по всем окнам.
+      - name: is_high_risk_window
+        description: Флаг окна с долей фрода выше 10 процентов.
+        data_tests:
+          - not_null
+      - name: total_amount
+        description: Суммарный оборот окна.
+      - name: fraud_amount
+        description: Сумма мошеннических транзакций в окне.
+      - name: avg_amount
+        description: Средний чек в окне.
+      - name: avg_transactions_per_slot
+        description: Среднее число транзакций на окно, для оценки загруженности.
+    data_tests:
+      # Ключ витрины — сочетание дня недели и часа.
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - day_of_week
+            - transaction_hour
+
+  - name: mart_merchant_analytics
+    description: >
+      Аналитика по мерчантам. Одна строка — один мерчант. Витрина
+      собирает оборот, уровень фрода и признаки подозрительности,
+      чтобы выделить мерчантов для проверки.
+    columns:
+      - name: merchant_name
+        description: Название мерчанта.
+        data_tests:
+          - unique
+          - not_null
+      - name: main_category
+        description: Основная категория мерчанта, самая частая.
+        data_tests:
+          - not_null
+      - name: transactions_count
+        description: Общее число транзакций мерчанта.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1
+      - name: unique_customers
+        description: Число уникальных клиентов мерчанта.
+        data_tests:
+          - not_null
+      - name: unique_categories
+        description: Число категорий, в которых работает мерчант.
+      - name: first_transaction_date
+        description: Дата первой транзакции мерчанта.
+      - name: last_transaction_date
+        description: Дата последней транзакции мерчанта.
+      - name: total_amount
+        description: Оборот мерчанта.
+        data_tests:
+          - not_null
+      - name: avg_amount
+        description: Средний чек мерчанта.
+        data_tests:
+          - not_null
+      - name: median_amount
+        description: Медианный чек мерчанта.
+      - name: max_amount
+        description: Максимальная сумма транзакции мерчанта.
+      - name: amount_vs_average_baseline
+        description: Отношение среднего чека мерчанта к среднему по всем мерчантам.
+      - name: fraud_count
+        description: Число мошеннических транзакций.
+        data_tests:
+          - not_null
+      - name: fraud_rate
+        description: Доля фрода у мерчанта в процентах.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100
+      - name: fraud_amount
+        description: Сумма мошеннических транзакций.
+      - name: fraud_amount_share
+        description: Доля мошеннических сумм в обороте мерчанта в процентах.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100
+      - name: fraud_customers
+        description: Число клиентов с мошеннической транзакцией у этого мерчанта.
+      - name: fraud_customers_share
+        description: Доля таких клиентов в процентах.
+      - name: suspicion_score
+        description: Число сработавших признаков подозрительности, от 0 до 3.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 3
+      - name: is_suspicious
+        description: Флаг мерчанта с двумя и более признаками подозрительности.
+        data_tests:
+          - not_null
